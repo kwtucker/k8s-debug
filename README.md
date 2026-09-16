@@ -59,17 +59,30 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.1 \
-  --profile=general --share-processes --target=<container> -- zsh
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.2 \
+  --profile=general --share-processes --target=<container> \
+  --arguments-only -- zsh
 ```
+
+`--arguments-only` is required: without it `kubectl debug ... -- zsh` sets
+`Command=[zsh]`, which overrides the image `ENTRYPOINT` (`debug-entrypoint.sh`)
+and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
+`pod-name%` prompt instead of `🐳 debug ❯`. The image also ships
+`/etc/zsh/zshenv` as a fallback so interactive `zsh` self-heals even when the
+entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
+(`nvim`, etc.), not just `zsh` — always use it.
 
 Prefer pinned tags (`:v0.1.0`, `:sha-…`) over `:latest`. If you keep the `kdebug`
 helper from dotfiles, point it at this image:
 
 ```bash
-export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.1
+export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.2
 kdebug
 ```
+
+> The `kdebug` helper must also pass `--arguments-only` (and should not claim
+> the debug image always runs as root — a target pod with `runAsUser: 1000`
+> runs the debug container as uid 1000).
 
 ## Examples
 

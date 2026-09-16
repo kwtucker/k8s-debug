@@ -9,6 +9,11 @@
 # runs THIS container as uid 1000 with /root unreadable. In that case switch
 # to the pre-provisioned dev home (same shell/editor config; XDG_DATA_HOME
 # stays on the shared read-only pre-warmed copy by design).
+# NOTE: keep in sync with config/zsh/zshenv. `kubectl debug ... -- zsh`
+# defaults to Command (overrides this ENTRYPOINT); /etc/zsh/zshenv re-applies
+# the same remap for zsh when this entrypoint is bypassed. Prefer
+# `kubectl debug ... --arguments-only -- zsh` so this entrypoint runs (fixes
+# HOME for ALL tools, not just zsh).
 set -euo pipefail
 
 export PATH="/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"

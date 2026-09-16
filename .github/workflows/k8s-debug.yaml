@@ -57,7 +57,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.IMAGE }}:v0.1.1
+            ${{ env.IMAGE }}:v0.1.2
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

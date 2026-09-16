@@ -105,6 +105,7 @@ RUN git clone --filter=blob:none https://github.com/kwtucker/dotfiles /opt/dotfi
 # (never a forked copy). antigen.zsh is fetched from upstream (same content
 # dotfiles vendors via `make zsh`).
 COPY config/zsh/.zshrc /root/.zshrc
+COPY config/zsh/zshenv /etc/zsh/zshenv
 COPY config/starship-debug.toml /root/.config/starship.toml
 COPY config/entrypoint.sh /usr/local/bin/debug-entrypoint.sh
 COPY scripts/verify.sh /usr/local/bin/k8s-debug-verify.sh

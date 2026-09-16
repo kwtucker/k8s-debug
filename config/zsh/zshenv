@@ -1,0 +1,19 @@
+# /etc/zsh/zshenv — always sourced by zsh, independent of HOME or ENTRYPOINT.
+#
+# Why this exists: `kubectl debug pod/<pod> -- <cmd>` defaults to setting the
+# ephemeral container's Command=[<cmd>], which overrides the image ENTRYPOINT
+# (debug-entrypoint.sh). The uid-1000 HOME remap living only in the entrypoint
+# then never runs: the container keeps HOME=/root (Docker ENV) while running
+# as uid 1000 with /root unreadable, so zsh can't load /root/.zshrc and falls
+# back to the default `hostname%` prompt.
+#
+# zsh always sources /etc/zsh/zshenv (unless -f), so duplicating the remap
+# here self-heals interactive shells even when the entrypoint is bypassed.
+# XDG_DATA_HOME is intentionally untouched: it stays on the shared
+# world-readable pre-warmed copy (/opt/data) by design.
+if [ "$(id -u 2>/dev/null)" = "1000" ] && [ -d /home/dev ]; then
+  export HOME=/home/dev
+  export XDG_CONFIG_HOME=/home/dev/.config
+  export XDG_CACHE_HOME=/home/dev/.cache
+  export STARSHIP_CONFIG=/home/dev/.config/starship.toml
+fi

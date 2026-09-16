@@ -33,6 +33,8 @@ echo "== Shell =="
 check "zsh runs" zsh -c 'true'
 check "starship runs" starship --version
 check "fzf runs" fzf --version
+check "/etc/zsh/zshenv fallback exists" test -f /etc/zsh/zshenv
+check "zshenv handles uid-1000 remap" grep -q "HOME=/home/dev" /etc/zsh/zshenv
 
 echo "== Editor =="
 check "nvim runs" nvim --version
