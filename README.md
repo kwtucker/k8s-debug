@@ -59,7 +59,7 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.0 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.1 \
   --profile=general --share-processes --target=<container> -- zsh
 ```
 
@@ -67,7 +67,7 @@ Prefer pinned tags (`:v0.1.0`, `:sha-…`) over `:latest`. If you keep the `kdeb
 helper from dotfiles, point it at this image:
 
 ```bash
-export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.0
+export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.1
 kdebug
 ```
 
@@ -143,8 +143,15 @@ defect:
   re-run with a `--custom` profile granting `runAsUser: 0` when root is truly needed.
 - `kubectl debug` itself needs `get pods` + `update pods/ephemeralcontainers`.
   A bare ServiceAccount context returns `Forbidden` — switch to an admin context.
+- The debug container inherits the target pod's **pod-level securityContext**:
+  debugging a pod with `runAsUser: 1000` runs this container as uid 1000, not
+  root. The image handles both cases with the same prompt and config — root
+  uses `/root`, uid 1000 uses the pre-provisioned `dev` home (`/home/dev`)
+  with a shared read-only copy of the pre-warmed editor data. Other uids get
+  a degraded shell (no provisioned home); use a `--custom` profile with
+  `runAsUser: 0` if you truly need root there.
 
-The image runs as **root** by design (standard for ephemeral debug containers).
+The image defaults to **root** (standard for ephemeral debug containers).
 It holds no persistent state: treat every session as disposable.
 
 ## Reproducibility

@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 REGISTRY ?= ghcr.io/kwtucker
 IMAGE    ?= $(REGISTRY)/k8s-debug
-TAG      ?= v0.1.0
+TAG      ?= v0.1.1
 # Pinned dotfiles commit (source of truth for nvim config). Bump deliberately.
 DOTFILES_REF ?= 5ee050c368f192253717616aa2ec3b9a772a3910
 

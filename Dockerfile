@@ -8,8 +8,13 @@
 # - Ubuntu 24.04 (glibc): same package names as dotfiles-devenv, apt tooling,
 #   Neovim 0.11.x compatible. Deliberately NOT devenv: no Go/Node/Rust,
 #   no Terraform/Helm/Docker/AWS CLIs, no tmux, no language servers.
-# - Runs as root: this is a kubectl-debug ephemeral container, not a login
-#   workstation. ss/strace/lsof just work where the security context allows.
+# - Runs as root by default, but ALSO supports uid 1000: kubectl debug
+#   inherits the target pod's pod-level securityContext, so debugging a pod
+#   with runAsUser: 1000 (e.g. the workspace pod) lands this container in
+#   uid 1000 with /root unreadable. A pre-provisioned `dev` user (uid 1000,
+#   HOME /home/dev) plus a shared world-readable data dir (/opt/data:
+#   pre-warmed nvim plugins/parsers, fzf completions) keeps the full shell
+#   and editor working in both cases. Other uids are out of scope.
 # - Dotfiles consumed at a PINNED commit (ARG DOTFILES_REF), never `main`.
 #   Bump = one-line, reviewable change.
 # - Neovim config symlinked from the pinned dotfiles clone; Lazy.nvim plugins
@@ -34,11 +39,25 @@ ENV DEBIAN_FRONTEND=noninteractive \
     HOME=/root \
     XDG_CONFIG_HOME=/root/.config \
     XDG_CACHE_HOME=/root/.cache \
-    XDG_DATA_HOME=/root/.local/share \
+    XDG_DATA_HOME=/opt/data \
     SHELL=/bin/zsh \
     EDITOR=nvim \
     STARSHIP_CONFIG=/root/.config/starship.toml \
     K8S_DEBUG=1
+
+# NOTE: XDG_DATA_HOME is a shared world-readable dir (not per-user): it holds
+# only runtime-readonly payload (nvim plugins/parsers, fzf completions), so
+# both root and the uid-1000 dev user below can use one pre-warmed copy.
+# Per-user writable state (history, compdump, antigen runtime) stays under
+# each $HOME. The entrypoint re-points HOME/XDG_CONFIG/XDG_CACHE (never
+# XDG_DATA_HOME) when running as uid 1000.
+
+# Non-root debug identity: matches the runAsUser: 1000 convention used by the
+# workspace pod (see dotfiles image/k8s/dev-pod.yaml). kubectl debug subjects
+# ephemeral containers to the target pod's pod-level securityContext.
+# Ubuntu ships an `ubuntu` user on uid 1000 — remove it so `dev` can take it.
+RUN (id ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
+    && useradd -m -s /usr/bin/zsh -u 1000 dev
 
 # Base deps: shell + networking/debugging + filesystem/data/TLS/process tools.
 # iproute2 provides `ss` + `ip`; dnsutils provides `dig`; fd-find/bat have
@@ -89,18 +108,34 @@ COPY config/zsh/.zshrc /root/.zshrc
 COPY config/starship-debug.toml /root/.config/starship.toml
 COPY config/entrypoint.sh /usr/local/bin/debug-entrypoint.sh
 COPY scripts/verify.sh /usr/local/bin/k8s-debug-verify.sh
-RUN mkdir -p /root/.config /root/.cache/zsh /root/.local/share/zsh/completions /root/.local/bin /workspace \
+RUN mkdir -p /root/.config /root/.cache/zsh "${XDG_DATA_HOME}/zsh/completions" /root/.local/bin /workspace \
     && ln -sfn /opt/dotfiles/nvim /root/.config/nvim \
     && curl -fsSL https://raw.githubusercontent.com/zsh-users/antigen/develop/bin/antigen.zsh \
          -o /root/.config/zsh-antigen.zsh \
     && chmod +x /usr/local/bin/debug-entrypoint.sh /usr/local/bin/k8s-debug-verify.sh \
-    && (command -v fzf >/dev/null && fzf --zsh > /root/.local/share/zsh/completions/_fzf || true)
+    && (command -v fzf >/dev/null && fzf --zsh > "${XDG_DATA_HOME}/zsh/completions/_fzf" || true)
 
 SHELL ["/bin/bash", "-euo", "pipefail", "-c"]
 
 # Pre-warm: one non-interactive login shell so antigen clones its bundles and
 # compinit writes its dump into this layer (same trick as devenv).
 RUN zsh -ic true
+
+# Dev-user skeleton: same shell/editor config as root, owned by dev. Antigen
+# bundles are copied (not re-cloned: works without cluster egress), but the
+# generated caches are dropped — they embed absolute /root paths, so the
+# first dev shell regenerates them offline in seconds.
+# /opt/data + /opt/dotfiles are made world-readable: the dev user consumes
+# the single shared pre-warmed copy, no 200MB+ duplication.
+RUN mkdir -p /home/dev/.config /home/dev/.cache/zsh /home/dev/.local/share/zsh /home/dev/.local/bin \
+    && cp /root/.zshrc /home/dev/.zshrc \
+    && cp /root/.config/starship.toml /home/dev/.config/starship.toml \
+    && cp /root/.config/zsh-antigen.zsh /home/dev/.config/zsh-antigen.zsh \
+    && ln -sfn /opt/dotfiles/nvim /home/dev/.config/nvim \
+    && cp -r /root/.antigen /home/dev/.antigen \
+    && rm -f /home/dev/.antigen/init.zsh* /home/dev/.antigen/.zcompdump* /home/dev/.antigen/.resources /home/dev/.antigen/debug.log \
+    && chown -R dev:dev /home/dev \
+    && chmod -R a+rX /opt/data /opt/dotfiles
 
 # Pre-warm editor: Lazy.nvim + plugins + treesitter parsers, headless.
 # `Lazy! sync` (NOT `install`): verified in devenv that `sync` fully engages
@@ -117,17 +152,18 @@ RUN zsh -ic true
 # locally; 120s gives CI margin). The `test -n` fails the build LOUD if no
 # parsers materialized — a highlighter-less editor must never ship silently.
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev \
-    && rm -rf /root/.local/share/nvim/lazy/lazy.nvim \
+    && rm -rf "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim" \
     && git clone --filter=blob:none --branch=stable \
-         https://github.com/folke/lazy.nvim.git /root/.local/share/nvim/lazy/lazy.nvim \
-    && test -d /root/.local/share/nvim/lazy/lazy.nvim/lua \
+         https://github.com/folke/lazy.nvim.git "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim" \
+    && test -d "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim/lua" \
     && { nvim --headless "+Lazy! sync" +qa || true; } \
-    && test -d /root/.local/share/nvim/lazy/lazy.nvim/lua \
+    && test -d "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim/lua" \
     && { nvim --headless -c "TSInstall yaml" -c "sleep 120" +qa || true; } \
-    && test -n "$(ls -A /root/.local/share/nvim/site/parser 2>/dev/null)" \
+    && test -n "$(ls -A "${XDG_DATA_HOME}/nvim/site/parser" 2>/dev/null)" \
     && apt-get purge -y --auto-remove gcc libc6-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /root/.cache/* /tmp/*
+    && rm -rf /var/lib/apt/lists/* /root/.cache/* /tmp/* \
+    && chmod -R a+rX /opt/data /opt/dotfiles
 
 WORKDIR /workspace
 

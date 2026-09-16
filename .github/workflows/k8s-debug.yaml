@@ -44,7 +44,7 @@ jobs:
             type=sha,prefix=sha-,format=short
 
       # Versioned tag comes from the Makefile TAG so git tags and image tags
-      # stay in sync. First release: v0.1.0.
+      # stay in sync. Bump both together per release.
       - name: Build (local, amd64)
         run: |
           make build
@@ -57,7 +57,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.IMAGE }}:v0.1.0
+            ${{ env.IMAGE }}:v0.1.1
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

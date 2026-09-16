@@ -13,7 +13,10 @@ export XDG_CACHE_HOME="${XDG_CACHE_HOME:-$HOME/.cache}"
 export XDG_DATA_HOME="${XDG_DATA_HOME:-$HOME/.local/share}"
 
 export HIST_STAMPS="mm/dd/yyyy"
-export HISTFILE="${XDG_DATA_HOME}/zsh/history"
+# History lives under XDG_STATE_HOME (per-user, writable) — never under the
+# shared read-only XDG_DATA_HOME, or every shell exit would log a write error.
+export HISTFILE="${XDG_STATE_HOME:-$HOME/.local/state}/zsh/history"
+mkdir -p "${HISTFILE:h}"
 export HISTSIZE=999999999
 export SAVEHIST=${HISTSIZE}
 
