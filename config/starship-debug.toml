@@ -1,0 +1,83 @@
+# starship-debug.toml — debug-container prompt.
+# Derived from kwtucker/dotfiles zsh/starship.toml (same catppuccin_frappe
+# palette). The only intentional change: an unmistakable `debug` prefix so
+# the prompt clearly indicates a disposable debug container.
+#
+# Renders approximately:  🐳 debug ❯
+format = """🐳 debug $directory$git_branch$git_status$character"""
+
+palette = "catppuccin_frappe"
+right_format = """"""
+continuation_prompt = '▶▶ '
+
+[aws]
+disabled = true
+
+[character]
+success_symbol = "[❯](teal)"
+error_symbol = "[❯](maroon)"
+vimcmd_symbol = "[❮](green)"
+
+[cmd_duration]
+disabled = true
+
+[directory]
+style = "bold subtext0"
+
+[docker_context]
+disabled = true
+
+[git_branch]
+symbol = '⎇ '
+style = "bold rosewater"
+format = '[$symbol$branch(:$remote_branch)]($style)'
+
+[git_status]
+format = ' [$ahead_behind$untracked$modified]($style)'
+up_to_date = '[✓](green)'
+
+[golang]
+disabled = true
+
+[kubernetes]
+disabled = true
+
+[terraform]
+disabled = true
+
+[username]
+disabled = true
+
+[hostname]
+disabled = true
+
+[palettes.catppuccin_frappe]
+rosewater = "#f2d5cf"
+flamingo = "#eebebe"
+pink = "#f4b8e4"
+mauve = "#ca9ee6"
+red = "#e78284"
+maroon = "#ea999c"
+peach = "#ef9f76"
+yellow = "#e5c890"
+green = "#a6d189"
+teal = "#81c8be"
+sky = "#99d1db"
+sapphire = "#85c1dc"
+blue = "#8caaee"
+lavender = "#babbf1"
+text = "#c6d0f5"
+subtext1 = "#b5bfe2"
+subtext0 = "#a5adce"
+overlay2 = "#949cbb"
+overlay1 = "#838ba7"
+overlay0 = "#737994"
+surface2 = "#626880"
+surface1 = "#51576d"
+surface0 = "#414559"
+base = "#303446"
+mantle = "#292c3c"
+crust = "#232634"
+
+[rust]
+format = "[$symbol($version )]($style) "
