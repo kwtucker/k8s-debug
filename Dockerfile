@@ -32,6 +32,7 @@ ARG NVIM_VERSION=0.11.6
 ARG STARSHIP_VERSION=1.24.2
 ARG FZF_VERSION=0.54.3
 ARG YQ_VERSION=4.53.6
+ARG GRPCURL_VERSION=1.9.4
 
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8 \
@@ -64,9 +65,9 @@ RUN (id ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
 # Debian-style names (fdfind/batcat) — symlinked below to upstream names.
 RUN apt-get update && apt-get install -y --no-install-recommends \
       zsh git curl wget ca-certificates less locales unzip \
-      iproute2 iputils-ping dnsutils netcat-openbsd traceroute \
+      iproute2 iputils-ping dnsutils netcat-openbsd socat traceroute \
       ripgrep fd-find bat less tree file \
-      jq openssl \
+      jq python3 openssl \
       procps htop lsof strace \
     && rm -rf /var/lib/apt/lists/* \
     && locale-gen C.UTF-8 \
@@ -77,8 +78,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # TARGETARCH handling keeps a future arm64 build working.
 RUN set -eux; \
     case "$TARGETARCH" in \
-      arm64) NVIM_ARCH=arm64; BINARY_ARCH=arm64 ;; \
-      *)     NVIM_ARCH=x86_64; BINARY_ARCH=amd64 ;; \
+      arm64) NVIM_ARCH=arm64; BINARY_ARCH=arm64; GRPCURL_ARCH=arm64 ;; \
+      *)     NVIM_ARCH=x86_64; BINARY_ARCH=amd64; GRPCURL_ARCH=x86_64 ;; \
     esac; \
     curl -fsSL -o /tmp/nvim.tar.gz \
       "https://github.com/neovim/neovim/releases/download/v${NVIM_VERSION}/nvim-linux-${NVIM_ARCH}.tar.gz"; \
@@ -93,8 +94,11 @@ RUN set -eux; \
     curl -fsSL -o /usr/local/bin/yq \
       "https://github.com/mikefarah/yq/releases/download/v${YQ_VERSION}/yq_linux_${BINARY_ARCH}"; \
     chmod +x /usr/local/bin/yq; \
-    rm -f /tmp/nvim.tar.gz /tmp/starship.tar.gz /tmp/fzf.tar.gz; \
-    for b in nvim starship fzf yq; do command -v "$b" >/dev/null || { echo "MISSING binary: $b"; exit 1; }; done
+    curl -fsSL -o /tmp/grpcurl.tar.gz \
+      "https://github.com/fullstorydev/grpcurl/releases/download/v${GRPCURL_VERSION}/grpcurl_${GRPCURL_VERSION}_linux_${GRPCURL_ARCH}.tar.gz"; \
+    tar -xzf /tmp/grpcurl.tar.gz -C /usr/local/bin grpcurl; \
+    rm -f /tmp/nvim.tar.gz /tmp/starship.tar.gz /tmp/fzf.tar.gz /tmp/grpcurl.tar.gz; \
+    for b in nvim starship fzf yq grpcurl; do command -v "$b" >/dev/null || { echo "MISSING binary: $b"; exit 1; }; done
 
 # Dotfiles at the pinned ref — nvim config source of truth.
 RUN git clone --filter=blob:none https://github.com/kwtucker/dotfiles /opt/dotfiles \

@@ -22,7 +22,9 @@ Editor:
 Networking:
 
 - `curl`, `wget`, `iproute2` (`ip`, `ss`), `iputils-ping`, `dnsutils` (`dig`),
-  `netcat-openbsd` (`nc`), `traceroute`
+  `netcat-openbsd` (`nc`), `socat`, `traceroute`
+- `getent` (glibc/`libc-bin`: NSS + `resolv.conf` checks, e.g.
+  `getent hosts service.namespace`)
 
 Filesystem / text:
 
@@ -30,7 +32,8 @@ Filesystem / text:
 
 Data:
 
-- `jq`, `yq`
+- `jq`, `yq`, `grpcurl` (gRPC reflection: `list`, `describe`, calls)
+- `python3` (ad-hoc scripting, e.g. `curl -s ... | python3 -m json.tool`)
 
 TLS:
 
@@ -40,7 +43,9 @@ Process / system:
 
 - `procps` (`ps`), `htop`, `lsof`, `strace`
 
-Deliberately excluded: Go/Node/Rust, Terraform, Helm, Docker/AWS CLIs, language
+Deliberately excluded: Go/Node/Rust, Terraform, Helm, kubectl (use host-side
+`kubectl`; the debug container inherits the pod's usually permission-less
+ServiceAccount), Docker/AWS CLIs, language
 servers, compilers, tmux, GUI tools, fonts. If a debugging session proves a new
 tool is needed, add it — otherwise keep the image lean.
 
@@ -59,7 +64,7 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.2 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.3 \
   --profile=general --share-processes --target=<container> \
   --arguments-only -- zsh
 ```
@@ -76,7 +81,7 @@ Prefer pinned tags (`:v0.1.0`, `:sha-…`) over `:latest`. If you keep the `kdeb
 helper from dotfiles, point it at this image:
 
 ```bash
-export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.2
+export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.3
 kdebug
 ```
 
@@ -103,6 +108,20 @@ Listening ports / connections:
 
 ```bash
 ss -lntp
+```
+
+TCP probing (`socat` covers what `nc` cannot — TLS, UNIX sockets):
+
+```bash
+echo -e "GET / HTTP/1.0\r\n\r\n" | socat - TCP:service:8080
+```
+
+gRPC (plaintext in-cluster; drop `-plaintext` for TLS):
+
+```bash
+grpcurl -plaintext service:8080 list
+grpcurl -plaintext service:8080 describe package.Service
+grpcurl -plaintext -d '{"key":"value"}' service:8080 package.Service/Method
 ```
 
 Process inspection (shares the target's process namespace with `--share-processes`):

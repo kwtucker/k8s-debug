@@ -46,6 +46,8 @@ check "wget" wget --version
 check "dig" dig -v
 check "ping" ping -V
 check "nc" nc -h
+check "socat" socat -V
+check "getent (libc-bin)" getent hosts localhost
 check "ip" ip -V
 check "ss" ss -V
 check_exists "traceroute binary" traceroute
@@ -61,6 +63,8 @@ check "less" less --version
 echo "== Data =="
 check "jq" jq --version
 check "yq" yq --version
+check "grpcurl" grpcurl --version
+check "python3" python3 --version
 
 echo "== TLS =="
 check "openssl" openssl version
