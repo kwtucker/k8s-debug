@@ -1,11 +1,10 @@
 # k8s-debug
 
 An ephemeral Kubernetes troubleshooting container: small, fast, familiar, disposable.
-Not a development environment — that remains [`kwtucker/dotfiles`](https://github.com/kwtucker/dotfiles)
-(`dotfiles-devenv` image). This image is for `kubectl debug` sessions and quick
-`docker run` inspections.
+Built for `kubectl debug` sessions and quick `docker run` inspections.
+Holds no persistent state: treat every session as disposable.
 
-Prompt shows `🐳 debug ❯` so you always know you are inside the debug container.
+Prompt shows `🐳 debug ❯` to clearly indicate a debug container session.
 
 ## Included tools
 
@@ -16,8 +15,8 @@ Shell:
 
 Editor:
 
-- `nvim` v0.11.6 with your LazyVim config from dotfiles (pinned commit, symlinked —
-  never a forked copy). Plugins + treesitter parsers pre-warmed. **No Mason LSPs.**
+- `nvim` v0.11.6 with LazyVim config from [`kwtucker/dotfiles`](https://github.com/kwtucker/dotfiles)
+  (pinned commit, symlinked). Plugins + treesitter parsers pre-warmed. **No Mason LSPs.**
 
 Networking:
 
@@ -77,17 +76,7 @@ and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
 entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
 (`nvim`, etc.), not just `zsh` — always use it.
 
-Prefer pinned tags (`:v0.1.0`, `:sha-…`) over `:latest`. If you keep the `kdebug`
-helper from dotfiles, point it at this image:
-
-```bash
-export KDEBUG_IMAGE=ghcr.io/kwtucker/k8s-debug:v0.1.3
-kdebug
-```
-
-> The `kdebug` helper must also pass `--arguments-only` (and should not claim
-> the debug image always runs as root — a target pod with `runAsUser: 1000`
-> runs the debug container as uid 1000).
+Prefer pinned tags (`:v0.1.3`, `:sha-…`) over `:latest`.
 
 ## Examples
 
@@ -172,7 +161,7 @@ defect:
   `NET_RAW` / `NET_ADMIN`.
 - Targets running as non-root trigger a `kubectl debug --profile=general`
   warning: the profile's extra capabilities cannot fully apply. Stay as-is, or
-  re-run with a `--custom` profile granting `runAsUser: 0` when root is truly needed.
+  re-run with a `--custom` profile granting `runAsUser: 0` when root is required.
 - `kubectl debug` itself needs `get pods` + `update pods/ephemeralcontainers`.
   A bare ServiceAccount context returns `Forbidden` — switch to an admin context.
 - The debug container inherits the target pod's **pod-level securityContext**:
@@ -181,7 +170,7 @@ defect:
   uses `/root`, uid 1000 uses the pre-provisioned `dev` home (`/home/dev`)
   with a shared read-only copy of the pre-warmed editor data. Other uids get
   a degraded shell (no provisioned home); use a `--custom` profile with
-  `runAsUser: 0` if you truly need root there.
+  `runAsUser: 0` if root is required.
 
 The image defaults to **root** (standard for ephemeral debug containers).
 It holds no persistent state: treat every session as disposable.
