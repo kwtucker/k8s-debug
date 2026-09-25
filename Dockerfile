@@ -6,7 +6,7 @@
 #
 # Design notes:
 # - Ubuntu 24.04 (glibc): same package names as dotfiles-devenv, apt tooling,
-#   Neovim 0.11.x compatible. Deliberately NOT devenv: no Go/Node/Rust,
+#   Neovim 0.12.x compatible. Deliberately NOT devenv: no Go/Node/Rust,
 #   no Terraform/Helm/Docker/AWS CLIs, no tmux, no language servers.
 # - Runs as root by default, but ALSO supports uid 1000: kubectl debug
 #   inherits the target pod's pod-level securityContext, so debugging a pod
@@ -25,12 +25,12 @@ FROM ubuntu:24.04
 ARG TARGETARCH
 # Pinned dotfiles commit — source of truth for nvim config.
 # Refresh: pick a tested commit from kwtucker/dotfiles, bump here + in Makefile.
-ARG DOTFILES_REF=5ee050c368f192253717616aa2ec3b9a772a3910
+ARG DOTFILES_REF=bef81cb13829e3fda25f958698d11ad4247e6513
 
 # Pinned binary versions (match image/mise.workspace.toml known-good set).
-ARG NVIM_VERSION=0.11.6
-ARG STARSHIP_VERSION=1.24.2
-ARG FZF_VERSION=0.54.3
+ARG NVIM_VERSION=0.12.5
+ARG STARSHIP_VERSION=1.26.0
+ARG FZF_VERSION=0.74.4
 ARG YQ_VERSION=4.53.6
 ARG GRPCURL_VERSION=1.9.4
 

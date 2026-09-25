@@ -4,9 +4,9 @@ SHELL := /bin/bash
 
 REGISTRY ?= ghcr.io/kwtucker
 IMAGE    ?= $(REGISTRY)/k8s-debug
-TAG      ?= v0.1.3
+TAG      ?= v0.1.4
 # Pinned dotfiles commit (source of truth for nvim config). Bump deliberately.
-DOTFILES_REF ?= 5ee050c368f192253717616aa2ec3b9a772a3910
+DOTFILES_REF ?= bef81cb13829e3fda25f958698d11ad4247e6513
 
 .PHONY: build run shell test size push help
 

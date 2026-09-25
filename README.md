@@ -15,7 +15,7 @@ Shell:
 
 Editor:
 
-- `nvim` v0.11.6 with LazyVim config from [`kwtucker/dotfiles`](https://github.com/kwtucker/dotfiles)
+- `nvim` v0.12.5 with LazyVim config from [`kwtucker/dotfiles`](https://github.com/kwtucker/dotfiles)
   (pinned commit, symlinked). Plugins + treesitter parsers pre-warmed. **No Mason LSPs.**
 
 Networking:
@@ -63,7 +63,7 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.3 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.4 \
   --profile=general --share-processes --target=<container> \
   --arguments-only -- zsh
 ```
@@ -76,7 +76,7 @@ and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
 entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
 (`nvim`, etc.), not just `zsh` — always use it.
 
-Prefer pinned tags (`:v0.1.3`, `:sha-…`) over `:latest`.
+Prefer pinned tags (`:v0.1.4`, `:sha-…`) over `:latest`.
 
 ## Examples
 

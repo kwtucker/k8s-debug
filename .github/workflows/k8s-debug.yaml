@@ -45,6 +45,14 @@ jobs:
 
       # Versioned tag comes from the Makefile TAG so git tags and image tags
       # stay in sync. Bump both together per release.
+      - name: Read release TAG from Makefile
+        id: tag
+        run: |
+          TAG="$(grep -E '^TAG[[:space:]]*\?*=' Makefile | sed -E 's/^[^=]*=[[:space:]]*//')"
+          test -n "$TAG" || { echo "Could not parse TAG from Makefile"; exit 1; }
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
       - name: Build (local, amd64)
         run: |
           make build
@@ -57,7 +65,7 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.IMAGE }}:v0.1.3
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
             ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
