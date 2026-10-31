@@ -4,7 +4,7 @@ SHELL := /bin/bash
 
 REGISTRY ?= ghcr.io/kwtucker
 IMAGE    ?= $(REGISTRY)/k8s-debug
-TAG      ?= v0.1.6
+TAG      ?= v0.1.7
 # Pinned dotfiles commit (source of truth for nvim config). Bump deliberately.
 DOTFILES_REF ?= 2379a50e07cf52d696218c6b3778bdf8433ebaa2
 
@@ -19,8 +19,8 @@ run: ## Run interactively, mounting $PWD at /workspace
 shell: ## Open zsh in the already-built image (no volume)
 	docker run --rm -it $(IMAGE):$(TAG) zsh
 
-test: ## Run functional verification inside the image
-	docker run --rm $(IMAGE):$(TAG) bash /usr/local/bin/k8s-debug-verify.sh
+test: ## Run functional verification inside the image (offline)
+	docker run --rm --network none $(IMAGE):$(TAG) bash /usr/local/bin/k8s-debug-verify.sh
 
 verify-pin: ## Assert the image was built from DOTFILES_REF
 	@got="$$(docker run --rm $(IMAGE):$(TAG) git -C /opt/dotfiles rev-parse HEAD)"; \

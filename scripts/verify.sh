@@ -9,11 +9,13 @@ FAIL=0
 
 check() { # check <label> <command...>
   local label="$1"; shift
-  if "$@" >/dev/null 2>&1; then
+  local out
+  if out=$("$@" 2>&1); then
     echo "PASS: $label"
     PASS=$((PASS + 1))
   else
     echo "FAIL: $label ($*)"
+    if [ -n "$out" ]; then printf '%s\n' "$out" | sed 's/^/  | /'; fi
     FAIL=$((FAIL + 1))
   fi
 }
@@ -39,6 +41,20 @@ check "zshenv handles uid-1000 remap" grep -q "HOME=/home/dev" /etc/zsh/zshenv
 echo "== Editor =="
 check "nvim runs" nvim --version
 check "nvim config loads headless" nvim --headless +qa
+# Mason's bin dir is normally added to PATH when mason.nvim loads; force it so
+# the health check finds the tree-sitter CLI regardless of load order.
+check "treesitter health clean (parsers + dependencies)" \
+  env PATH="/opt/data/nvim/mason/bin:$PATH" bash -c '
+    rm -f /tmp/ts-health.txt
+    nvim --headless -c "Lazy! load nvim-treesitter" \
+      -c "checkhealth nvim-treesitter" -c "silent w! /tmp/ts-health.txt" \
+      -c "qa!" >/dev/null 2>&1 || exit 1
+    test -s /tmp/ts-health.txt || { echo "health report was not written"; exit 1; }
+    if grep -q "ERROR" /tmp/ts-health.txt; then
+      grep -B1 -A2 "ERROR" /tmp/ts-health.txt
+      exit 1
+    fi
+  '
 
 echo "== Pinned dotfiles / K8S_DEBUG contract =="
 check "K8S_DEBUG=1" test "${K8S_DEBUG:-}" = "1"

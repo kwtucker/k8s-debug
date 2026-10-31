@@ -153,12 +153,18 @@ RUN mkdir -p /home/dev/.config /home/dev/.cache/zsh /home/dev/.local/share/zsh /
 # excluded from the final image by design (§7) — so gcc is installed and
 # purged WITHIN this single layer: the compiled parser .so files persist
 # while the compiler leaves no trace in the shipped image.
-# NOTE: `sync` only clones plugins; parsers install when nvim-treesitter
-# loads. `:TSInstall <lang>` forces that load, and its config installs every
-# missing ensure_installed parser (~40 langs) into .../nvim/site/parser/.
-# `:sleep` lets the async jobs finish headless (verified: 45s suffices
-# locally; 120s gives CI margin). The `test -n` fails the build LOUD if no
-# parsers materialized — a highlighter-less editor must never ship silently.
+# NOTE: `sync` only clones plugins, but its build hook loads nvim-treesitter,
+# whose LazyVim config starts installing the ensure_installed parsers async.
+# `+qa` then kills that queue mid-flight, leaving stale tree-sitter-*-tmp
+# cache dirs; a later install run hits ENOTEMPTY and silently skips parsers.
+# That is how `hcl` went missing, and since the `terraform` parser requires
+# it, `:checkhealth nvim-treesitter` reported `ERROR terraform(queries)`.
+# So: drop the partial cache after `sync`, load nvim-treesitter once to start
+# a clean install, and block until the queue drains (wait-for-parsers.lua),
+# which fails the build loudly if anything is still missing.
+# The `test -n` is a final belt-and-suspenders check.
+COPY scripts/wait-for-parsers.lua /usr/local/bin/k8s-debug-wait-parsers.lua
+
 RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev \
     && rm -rf "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim" \
     && git clone --filter=blob:none --branch=stable \
@@ -166,7 +172,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev \
     && test -d "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim/lua" \
     && { nvim --headless "+Lazy! sync" +qa || true; } \
     && test -d "${XDG_DATA_HOME}/nvim/lazy/lazy.nvim/lua" \
-    && { nvim --headless -c "TSInstall yaml" -c "sleep 120" +qa || true; } \
+    && rm -rf "${XDG_CACHE_HOME}/nvim"/tree-sitter-* \
+    && nvim --headless -c "Lazy! load nvim-treesitter" \
+         -c "luafile /usr/local/bin/k8s-debug-wait-parsers.lua" +qa \
     && test -n "$(ls -A "${XDG_DATA_HOME}/nvim/site/parser" 2>/dev/null)" \
     && apt-get purge -y --auto-remove gcc libc6-dev \
     && apt-get clean \

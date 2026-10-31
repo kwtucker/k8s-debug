@@ -64,7 +64,7 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.6 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.7 \
   --profile=general --share-processes --target=<container> \
   --arguments-only -- zsh
 ```
@@ -77,7 +77,7 @@ and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
 entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
 (`nvim`, etc.), not just `zsh` — always use it.
 
-Prefer pinned tags (`:v0.1.6`, `:sha-…`) over `:latest`.
+Prefer pinned tags (`:v0.1.7`, `:sha-…`) over `:latest`.
 
 ## Examples
 
@@ -186,8 +186,9 @@ implicitly.
 
 `make verify` asserts the built image's `/opt/dotfiles` checkout equals
 `DOTFILES_REF`, that `K8S_DEBUG=1` left no Mason LSP packages (only the
-on-demand `tree-sitter-cli`), and that the editor starts offline as both root
-and uid 1000. CI runs it before publishing.
+on-demand `tree-sitter-cli`), that `:checkhealth nvim-treesitter` is clean
+(parsers, queries, and parser dependencies), and that the editor starts
+offline as both root and uid 1000. CI runs it before publishing.
 
 > Prerequisite: dotfiles `nvim/lua/plugins/mason.lua` must honor `K8S_DEBUG=1`
 > by ensuring zero packages (otherwise the first `nvim` launch async-installs
