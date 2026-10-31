@@ -60,13 +60,14 @@ make build
 make run            # mounts $PWD at /workspace, drops into zsh
 cd /workspace && nvim .
 make test           # functional verification of every tool
+make verify         # test + pin assertion + offline/uid-1000 startup (CI gate)
 ```
 
 Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.5 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.6 \
   --profile=general --share-processes --target=<container> \
   --arguments-only -- zsh
 ```
@@ -79,7 +80,7 @@ and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
 entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
 (`nvim`, etc.), not just `zsh` — always use it.
 
-Prefer pinned tags (`:v0.1.5`, `:sha-…`) over `:latest`.
+Prefer pinned tags (`:v0.1.6`, `:sha-…`) over `:latest`.
 
 ## Examples
 
@@ -185,6 +186,11 @@ It holds no persistent state: treat every session as disposable.
 `2379a50e07cf52d696218c6b3778bdf8433ebaa2`). Bumping the Neovim config =
 bumping one SHA, reviewable in git history. The image never tracks `main`
 implicitly.
+
+`make verify` asserts the built image's `/opt/dotfiles` checkout equals
+`DOTFILES_REF`, that `K8S_DEBUG=1` left no Mason LSP packages (only the
+on-demand `tree-sitter-cli`), and that the editor starts offline as both root
+and uid 1000. CI runs it before publishing.
 
 > Prerequisite: dotfiles `nvim/lua/plugins/mason.lua` must honor `K8S_DEBUG=1`
 > by ensuring zero packages (otherwise the first `nvim` launch async-installs

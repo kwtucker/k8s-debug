@@ -40,6 +40,21 @@ echo "== Editor =="
 check "nvim runs" nvim --version
 check "nvim config loads headless" nvim --headless +qa
 
+echo "== Pinned dotfiles / K8S_DEBUG contract =="
+check "K8S_DEBUG=1" test "${K8S_DEBUG:-}" = "1"
+check "DOTFILES_REF recorded in image" test -n "${DOTFILES_REF:-}"
+check "dotfiles checkout matches DOTFILES_REF" \
+  test "$(git -C /opt/dotfiles rev-parse HEAD 2>/dev/null)" = "${DOTFILES_REF:-unset}"
+check "nvim config symlinks into pinned clone" \
+  test "$(readlink -f /root/.config/nvim 2>/dev/null)" = "/opt/dotfiles/nvim"
+check "no Mason LSP packages installed" bash -c '
+  dir=/opt/data/nvim/mason/packages
+  # tree-sitter-cli is expected: LazyVim installs it on demand outside
+  # ensure_installed, even with the K8S_DEBUG guard. Anything else means
+  # the guard regressed.
+  [ ! -d "$dir" ] || [ -z "$(find "$dir" -mindepth 1 -maxdepth 1 ! -name tree-sitter-cli -print -quit 2>/dev/null)" ]
+'
+
 echo "== Networking =="
 check "curl" curl --version
 check "wget" wget --version

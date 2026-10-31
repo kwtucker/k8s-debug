@@ -26,6 +26,9 @@ ARG TARGETARCH
 # Pinned dotfiles commit — source of truth for nvim config.
 # Refresh: pick a tested commit from kwtucker/dotfiles, bump here + in Makefile.
 ARG DOTFILES_REF=2379a50e07cf52d696218c6b3778bdf8433ebaa2
+# Record the pin in the image so runtime verification can assert that the
+# checkout really matches (scripts/verify.sh). Not a secret.
+ENV DOTFILES_REF=${DOTFILES_REF}
 
 # Pinned binary versions (known-good set).
 ARG NVIM_VERSION=0.12.5

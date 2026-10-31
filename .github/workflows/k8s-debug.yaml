@@ -53,10 +53,10 @@ jobs:
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
 
-      - name: Build (local, amd64)
+      - name: Build and verify (local, amd64)
         run: |
           make build
-          make test
+          make verify
 
       - uses: docker/build-push-action@v6
         with:
