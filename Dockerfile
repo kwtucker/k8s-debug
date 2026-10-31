@@ -5,12 +5,12 @@
 #   docker build --build-arg DOTFILES_REF=<sha> -t ghcr.io/kwtucker/k8s-debug:local .
 #
 # Design notes:
-# - Ubuntu 24.04 (glibc): same package names as dotfiles-devenv, apt tooling,
-#   Neovim 0.12.x compatible. Deliberately NOT devenv: no Go/Node/Rust,
+# - Ubuntu 24.04 (glibc): apt tooling, Neovim 0.12.x compatible. Deliberately
+#   NOT a full dev image: no Go/Node/Rust,
 #   no Terraform/Helm/Docker/AWS CLIs, no tmux, no language servers.
 # - Runs as root by default, but ALSO supports uid 1000: kubectl debug
 #   inherits the target pod's pod-level securityContext, so debugging a pod
-#   with runAsUser: 1000 (e.g. the workspace pod) lands this container in
+#   with runAsUser: 1000 (e.g. a non-root dev pod) lands this container in
 #   uid 1000 with /root unreadable. A pre-provisioned `dev` user (uid 1000,
 #   HOME /home/dev) plus a shared world-readable data dir (/opt/data:
 #   pre-warmed nvim plugins/parsers, fzf completions) keeps the full shell
@@ -25,9 +25,9 @@ FROM ubuntu:24.04
 ARG TARGETARCH
 # Pinned dotfiles commit — source of truth for nvim config.
 # Refresh: pick a tested commit from kwtucker/dotfiles, bump here + in Makefile.
-ARG DOTFILES_REF=bef81cb13829e3fda25f958698d11ad4247e6513
+ARG DOTFILES_REF=2379a50e07cf52d696218c6b3778bdf8433ebaa2
 
-# Pinned binary versions (match image/mise.workspace.toml known-good set).
+# Pinned binary versions (known-good set).
 ARG NVIM_VERSION=0.12.5
 ARG STARSHIP_VERSION=1.26.0
 ARG FZF_VERSION=0.74.4
@@ -53,9 +53,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # each $HOME. The entrypoint re-points HOME/XDG_CONFIG/XDG_CACHE (never
 # XDG_DATA_HOME) when running as uid 1000.
 
-# Non-root debug identity: matches the runAsUser: 1000 convention used by the
-# workspace pod (see dotfiles image/k8s/dev-pod.yaml). kubectl debug subjects
-# ephemeral containers to the target pod's pod-level securityContext.
+# Non-root debug identity: matches the runAsUser: 1000 convention used by
+# non-root pods. kubectl debug subjects ephemeral containers to the target
+# pod's pod-level securityContext.
 # Ubuntu ships an `ubuntu` user on uid 1000 — remove it so `dev` can take it.
 RUN (id ubuntu >/dev/null 2>&1 && userdel -r ubuntu || true) \
     && useradd -m -s /usr/bin/zsh -u 1000 dev

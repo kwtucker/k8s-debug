@@ -1,6 +1,6 @@
 # k8s-debug.yaml — build, verify, and publish the debug image.
-# Simpler than workspace-image.yaml by design: amd64-only v1, no Mason sync
-# check (no LSPs in this image), basic verify.sh gate before push.
+# Deliberately simple: amd64-only v1, no Mason sync check (no LSPs in this
+# image), basic verify.sh gate before push.
 name: k8s-debug
 
 on:

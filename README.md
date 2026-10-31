@@ -4,6 +4,9 @@ An ephemeral Kubernetes troubleshooting container: small, fast, familiar, dispos
 Built for `kubectl debug` sessions and quick `docker run` inspections.
 Holds no persistent state: treat every session as disposable.
 
+It supersedes the retired `ghcr.io/kwtucker/workspace` image for Kubernetes
+debugging.
+
 Prompt shows `🐳 debug ❯` to clearly indicate a debug container session.
 
 ## Included tools
@@ -63,7 +66,7 @@ Kubernetes (ephemeral debug container):
 
 ```bash
 kubectl debug -it pod/<pod> \
-  --image=ghcr.io/kwtucker/k8s-debug:v0.1.4 \
+  --image=ghcr.io/kwtucker/k8s-debug:v0.1.5 \
   --profile=general --share-processes --target=<container> \
   --arguments-only -- zsh
 ```
@@ -76,7 +79,7 @@ and skips the uid-1000 `HOME=/home/dev` remap. The symptom is a bare
 entrypoint is bypassed, but `--arguments-only` fixes `HOME` for *all* tools
 (`nvim`, etc.), not just `zsh` — always use it.
 
-Prefer pinned tags (`:v0.1.4`, `:sha-…`) over `:latest`.
+Prefer pinned tags (`:v0.1.5`, `:sha-…`) over `:latest`.
 
 ## Examples
 
@@ -178,9 +181,10 @@ It holds no persistent state: treat every session as disposable.
 ## Reproducibility
 
 `Dockerfile` clones `kwtucker/dotfiles` at the pinned `DOTFILES_REF` commit
-(default set in `Makefile`, overridable via `--build-arg`). Bumping the Neovim
-config = bumping one SHA, reviewable in git history. The image never tracks
-`main` implicitly.
+(default set in `Makefile`, overridable via `--build-arg`; currently
+`2379a50e07cf52d696218c6b3778bdf8433ebaa2`). Bumping the Neovim config =
+bumping one SHA, reviewable in git history. The image never tracks `main`
+implicitly.
 
 > Prerequisite: dotfiles `nvim/lua/plugins/mason.lua` must honor `K8S_DEBUG=1`
 > by ensuring zero packages (otherwise the first `nvim` launch async-installs

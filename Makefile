@@ -4,9 +4,9 @@ SHELL := /bin/bash
 
 REGISTRY ?= ghcr.io/kwtucker
 IMAGE    ?= $(REGISTRY)/k8s-debug
-TAG      ?= v0.1.4
+TAG      ?= v0.1.5
 # Pinned dotfiles commit (source of truth for nvim config). Bump deliberately.
-DOTFILES_REF ?= bef81cb13829e3fda25f958698d11ad4247e6513
+DOTFILES_REF ?= 2379a50e07cf52d696218c6b3778bdf8433ebaa2
 
 .PHONY: build run shell test size push help
 
@@ -22,7 +22,7 @@ shell: ## Open zsh in the already-built image (no volume)
 test: ## Run functional verification inside the image
 	docker run --rm $(IMAGE):$(TAG) bash /usr/local/bin/k8s-debug-verify.sh
 
-size: ## Show image size (compare against dotfiles-devenv)
+size: ## Show image size
 	docker images $(IMAGE) --format 'table {{.Repository}}\t{{.Tag}}\t{{.Size}}'
 
 push: ## Push versioned tag + latest to GHCR (requires `docker login ghcr.io`)
