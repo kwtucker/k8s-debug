@@ -4,9 +4,6 @@ An ephemeral Kubernetes troubleshooting container: small, fast, familiar, dispos
 Built for `kubectl debug` sessions and quick `docker run` inspections.
 Holds no persistent state: treat every session as disposable.
 
-It supersedes the retired `ghcr.io/kwtucker/workspace` image for Kubernetes
-debugging.
-
 Prompt shows `🐳 debug ❯` to clearly indicate a debug container session.
 
 ## Included tools
